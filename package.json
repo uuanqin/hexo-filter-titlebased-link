@@ -10,7 +10,9 @@
     "hexo",
     "filter",
     "link",
-    "obsidian"
+    "obsidian",
+    "wiki",
+    "title-based"
   ],
   "author": "wuanqin",
   "license": "MIT"
