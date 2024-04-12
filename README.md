@@ -8,7 +8,8 @@ This plugin makes you easy to use wiki links based on the title
 (its form may be `[[Title]]` or `[[Title|Alias]]`) in Hexo,
 especially when you use [Obsidian](https://obsidian.md/) to manage your blog.
 
-> [!NOTE] Make sure that no more than one vertical bar (`|`) in a wiki link, and `Alias` should not be empty.
+> [!NOTE]
+> Make sure that no more than one vertical bar (`|`) in a wiki link, and `Alias` should not be empty. In addition, your blog should not have two posts with the same title.
 
 ## Installation
 
@@ -18,7 +19,7 @@ npm install hexo-filter-titlebased-link --save
 
 ## Usage
 
-Hexo sets every post a [Permalinks](https://hexo.io/docs/permalinks.html) in a configuration file `_config.yml`.
+Hexo sets every post a [Permalinks](https://hexo.io/docs/permalinks.html), which can be configured in the `_config.yml`.
 
 Here is an example:
 
