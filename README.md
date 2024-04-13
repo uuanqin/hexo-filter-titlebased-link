@@ -4,12 +4,13 @@ Transfer wiki links (based on the title) in Markdown files to permalink.
 
 将基于标题的双向链接转换为 Hexo 设定的永久链接。
 
-This plugin makes you easy to use wiki links based on the title 
-(its form may be `[[Title]]` or `[[Title|Alias]]`) in Hexo,
-especially when you use [Obsidian](https://obsidian.md/) to manage your blog.
+This plugin makes you easy to use wiki links (its form may be `[[Title]]` or `[[Title|Alias]]`) in Hexo.
+It would be more useful when you use [Obsidian](https://obsidian.md/) to manage your blogs.
 
 > [!NOTE]
-> Make sure that no more than one vertical bar (`|`) in a wiki link, and `Alias` should not be empty. In addition, your blog should not have two posts with the same title.
+> - Make sure that no more than one vertical bar (`|`) in a wiki link.
+> - If one vertical bar included, `Alias` should not be empty.
+> - In addition, the title of all your articles should be unique.
 
 ## Installation
 
@@ -29,7 +30,7 @@ permalink: p/:year/:month/:day/:hour/:minute/:second/
 ```
 
 Assume that you have a post named `my_post_1` whose permalink is `p/2024/04/12/14/18/50/`. 
-In another post named `my_post_2`, you wrote a wiki link to `my_post_1` in a markdown file named `my_post_2.md`:
+In another post named `my_post_2`, you wrote a wiki link to `my_post_1`:
 
 ```markdown
 This is my_post_2, 
