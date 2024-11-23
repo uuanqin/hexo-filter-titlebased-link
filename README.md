@@ -28,9 +28,6 @@ To configure this plugin, add these contents in the `_config.yml`:
 # https://github.com/uuanqin/hexo-filter-titlebased-link
 titlebased_link:
   enable: true   # enable this plugin
-  link_attributes: "" 
-  custom_html_before_link: ""
-  custom_html_after_link: ""
 ```
 
 Hexo sets every post a [Permalinks](https://hexo.io/docs/permalinks.html), which can be configured in the `_config.yml`.
@@ -63,14 +60,31 @@ After rendering by Hexo, the resultant HTML file of `my_post_2.md` will be:
 
 ## Customize Your Links
 
-If your option is:
+The plugin reserves several slots for custom HTML.
+
+```js
+`
+${config.custom_html.before_tag}
+    <a ${config.custom_html.link_attributes} href="/p/2024/04/12/14/18/50/">
+        ${config.custom_html.before_text}
+        my_post_1
+        ${config.custom_html.after_text}
+    </a>
+${config.custom_html.after_tag}
+`
+```
+
+For example, if your option is:
 
 ```yaml
 titlebased_link:
   enable: true   # enable this plugin
-  link_attributes: 'class="my-link" title="example"'
-  custom_html_before_link: '<p class="my-p"> Before the link '
-  custom_html_after_link: ' After the link </p>'
+  custom_html:
+    link_attributes: 'class="my-link" title="example"'
+    before_tag: '<p class="my-p"> Before the link '
+    after_tag: ' After the link </p>'
+    before_text: ''
+    after_text: ''
 ```
 
 Then the resultant HTML will be (the code below was formatted for ease of review):
