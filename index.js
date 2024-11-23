@@ -2,7 +2,9 @@
 
 const config = hexo.config.titlebased_link = Object.assign({
   enable: false,
-  class_name: ""
+  link_attributes: "",
+  custom_html_before_link: "",
+  custom_html_after_link: ""
 }, hexo.config.titlebased_link);
 
 const log = require('hexo-log').default({
@@ -33,11 +35,10 @@ if (config.enable) {
     const re = /\[\[([^\*"\\/<>:?\[\]\|]+)\|?([^\*"\\/<>:|?\[\]]*)?\]\]/g;
     post.content = post.content.replace(re, function (match, p1, p2) {
       const fileName = decodeURI(p1);
-      const className = config.class_name==="" ? "" : `class="`+config.class_name+`" `;
-
+      const link_text = p2 ? decodeURI(p2) : fileName;
       if (cachedPost[fileName]) {
         log.info("hexo-filter-titlebased-link: Replace -", fileName);
-        return p2 ? `<a ${className}href="/${cachedPost[fileName]}">${decodeURI(p2)}</a>` : `<a href="/${cachedPost[fileName]}">${fileName}</a>`;
+        return `${config.custom_html_before_link}<a ${config.link_attributes} href="/${cachedPost[fileName]}">${link_text}</a>${config.custom_html_after_link}`;
       }
       return match;
     });

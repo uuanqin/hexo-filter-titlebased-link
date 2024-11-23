@@ -5,7 +5,8 @@ Transfer wiki links (based on the title) in Markdown files to permalink.
 将基于标题的双向链接转换为 Hexo 设定的永久链接。
 
 This plugin makes you easy to use wiki links (its form may be `[[Title]]` or `[[Title|Alias]]`) in Hexo.
-It would be more useful when you use [Obsidian](https://obsidian.md/) to manage your blogs.
+It would be more useful when you use [Obsidian](https://obsidian.md/) to manage your blogs. 
+In addition, it allows you to customize the rendered HTML links.
 
 > [!NOTE]
 > - Ensure that no more than one vertical bar (`|`) is included in a wiki link.
@@ -18,14 +19,18 @@ It would be more useful when you use [Obsidian](https://obsidian.md/) to manage 
 npm install hexo-filter-titlebased-link --save
 ```
 
-## Usage
+## Quick Start
 
 To configure this plugin, add these contents in the `_config.yml`:
 
 ```yaml
+# hexo-filter-titlebased-link
+# https://github.com/uuanqin/hexo-filter-titlebased-link
 titlebased_link:
   enable: true   # enable this plugin
-  class_name: "" # class name of wiki links
+  link_attributes: "" 
+  custom_html_before_link: ""
+  custom_html_after_link: ""
 ```
 
 Hexo sets every post a [Permalinks](https://hexo.io/docs/permalinks.html), which can be configured in the `_config.yml`.
@@ -43,23 +48,39 @@ In another post named `my_post_2`, you wrote a wiki link to `my_post_1`:
 ```markdown
 This is my_post_2, 
 
-you can see my last post by clicking this link: [[my_post_1]],
+you can click this link: [[my_post_1]],
 
-or [[my_post_1|this link]].
+or [[my_post_1|Any title]].
 ```
 
 After rendering by Hexo, the resultant HTML file of `my_post_2.md` will be:
 
 ```html
 <p>This is my_post_2, </p>
-<p>you can see my last post by clicking this link: <a href="/p/2024/04/12/14/18/50/">my_post_1</a>,</p>
-<p>or <a href="/p/2024/04/12/14/18/50/">this link</a>.</p>
+<p>you can click this link: <a href="/p/2024/04/12/14/18/50/">my_post_1</a>,</p>
+<p>or <a href="/p/2024/04/12/14/18/50/">Any title</a>.</p>
 ```
 
-If you specify a class name (e.g., `my-class`) in the options, the rendering result will be:
+## Customize Your Links
+
+If your option is:
+
+```yaml
+titlebased_link:
+  enable: true   # enable this plugin
+  link_attributes: 'class="my-link" title="example"'
+  custom_html_before_link: '<p class="my-p"> Before the link '
+  custom_html_after_link: ' After the link </p>'
+```
+
+Then the resultant HTML will be (the code below was formatted for ease of review):
 
 ```html
-<a class="my-class" href="/p/2024/04/12/14/18/50/">this link</a>
+<p class="my-p"> 
+    Before the link
+    <a class="my-link" title="example" href="/p/2024/04/12/14/18/50/">this link</a>
+    After the link 
+</p>
 ```
 
 ## Related Hexo Plugins
