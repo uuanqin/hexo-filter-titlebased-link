@@ -36,12 +36,12 @@ if (config.enable) {
   }, 25);
 
   hexo.extend.filter.register("before_post_render", (post) => {
-    const re = /\[\[([^\*"\\/<>:?\[\]\|]+)\|?([^\*"\\/<>:|?\[\]]*)?\]\]/g;
+    const re = /(?<!\!)\[\[([^\*"\\\/<>:?\[\]\|]+)\|?([^\*"\\\/<>:\|?\[\]]*)?\]\]/g;
     post.content = post.content.replace(re, function (match, p1, p2) {
       const fileName = decodeURI(p1);
       const link_text = p2 ? decodeURI(p2) : fileName;
       if (cachedPost[fileName]) {
-        log.info("hexo-filter-titlebased-link: Replace -", fileName);
+        // log.info("hexo-filter-titlebased-link: Replace -", fileName);
         return `${config.custom_html.before_tag}<a ${config.custom_html.link_attributes} href="/${cachedPost[fileName]}">${config.custom_html.before_text}${link_text}${config.custom_html.after_text}</a>${config.custom_html.after_tag}`;
       }
       return match;

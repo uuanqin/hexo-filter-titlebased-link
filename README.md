@@ -60,7 +60,8 @@ After rendering by Hexo, the resultant HTML file of `my_post_2.md` will be:
 
 ## Customize Your Links
 
-The plugin reserves several slots for custom HTML.
+Similar to the [hexo-filter-custom-link](https://github.com/uuanqin/hexo-filter-custom-link),
+this plugin reserves several slots for custom HTML.
 
 ```js
 `
@@ -99,10 +100,13 @@ Then the resultant HTML will be (the code below was formatted for ease of review
 
 ## Related Hexo Plugins
 
+- [hexo-filter-custom-link](https://github.com/uuanqin/hexo-filter-custom-link): Customize the rendered HTML of Links. 自定义链接渲染后的 HTML。
 - [hexo-filter-link-post](https://github.com/tcatche/hexo-filter-link-post): Transfer relative post link in markdown file to post link. 
 将文件里的通过相对路径引用的 markdown 文件转为对应的文章的链接。
 - [hexo-abbrlink](https://github.com/Rozbo/hexo-abbrlink): Create one and only link for every post for hexo. 
 为每一篇 Hexo 文章创建独一无二的永久链接。
+
+更多 Obsidian 语法插件推荐详见我的博客文章 [Hexo 博客适配 Obsidian 新语法](https://blog.uuanqin.top/p/d4bc55f2/)。
 
 ## License
 
