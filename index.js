@@ -36,11 +36,26 @@ if (config.enable) {
     }, 25);
 
     hexo.extend.filter.register("before_post_render", (post) => {
-        const re = /(?<!\!)\[\[([^\*"\\\/<>:?\[\]\|#]+)(#[^\*"\\\/<>:?\[\]\|#]+)?\|?([^\*"\\\/<>:?\[\]]*)?\]\]/g;
+        const re = /(?<!\!)\[\[([^\*"\\\/<>:?\[\]\|#]+)(#[^"\\\/\[\]\|]+)?(\|[^"\\\/<>:?\[\]]*)?\]\]/g;
         post.content = post.content.replace(re, function (match, p1, p2, p3) {
             const fileName = decodeURI(p1);
-            const anchor = p2 ? decodeURI(p2).replaceAll(/ +/g, "-") : "";
-            const link_text = p3 ? decodeURI(p3) : fileName;
+            let anchor;
+            if (p2) {
+                var title = decodeURI(p2); // 不能含有 % 符号，会报错
+                title = title.toLowerCase();
+                title = title.replace(/[ ~!@#$^&*()_+.=\-`]+/g, '-');
+                title = title.replace(/^-+|-+$/g, '');
+                anchor = "#" + title;
+            } else {
+                anchor = "";
+            }
+            let link_text;
+            if (p3) {
+                link_text = decodeURI(p3).substring(1);
+                link_text = link_text === "" ? fileName : link_text;
+            } else {
+                link_text = fileName;
+            }
             if (cachedPost[fileName]) {
                 log.debug("hexo-filter-titlebased-link: Replace -", fileName);
                 return `${config.custom_html.before_tag}<a ${config.custom_html.link_attributes} href="/${cachedPost[fileName]}${anchor}">${config.custom_html.before_text}${link_text}${config.custom_html.after_text}</a>${config.custom_html.after_tag}`;

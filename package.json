@@ -1,6 +1,6 @@
 {
   "name": "hexo-filter-titlebased-link",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Transfer wiki links (based on the title) in Markdown files to permalink.",
   "main": "index.js",
   "scripts": {
