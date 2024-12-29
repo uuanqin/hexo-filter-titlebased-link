@@ -30,6 +30,7 @@ if (config.enable) {
     hexo.extend.filter.register('post_permalink', function (permalink) {
         if (lastPost) {
             const fileName = lastPost.source.match(/[^/]*$/)[0].replace(/\.md$/, '');
+            permalink = permalink.startsWith("/") ? permalink.substring(1) : permalink;
             cachedPost[fileName] = permalink;
         }
         return permalink;
