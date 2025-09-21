@@ -30,14 +30,15 @@ if (config.enable) {
     hexo.extend.filter.register('post_permalink', function (permalink) {
         if (lastPost) {
             const fileName = lastPost.source.match(/[^/]*$/)[0].replace(/\.md$/, '');
-            permalink = permalink.startsWith("/") ? permalink.substring(1) : permalink;
+            permalink = permalink.startsWith("/")? permalink.substring(1):permalink;
             cachedPost[fileName] = permalink;
+            // log.debug("filename:"+fileName + " permalink: ",permalink)
         }
         return permalink;
     }, 25);
 
     hexo.extend.filter.register("before_post_render", (post) => {
-        const re = /(?<!\!)\[\[([^\*"\\\/<>:?\[\]\|#]+)(#[^"\\\/\[\]\|]+)?(\|[^"\\\/<>:?\[\]]*)?\]\]/g;
+        const re = /(?<!\!)\[\[([^\*"\\\/<>:?\[\]\|#]+)(#[^"\\\/\[\]\|]+)?(\\?\|[^"\/<>:?\[\]]*)?\]\]/g;
         post.content = post.content.replace(re, function (match, p1, p2, p3) {
             const fileName = decodeURI(p1);
             let anchor;
@@ -52,7 +53,7 @@ if (config.enable) {
             }
             let link_text;
             if (p3) {
-                link_text = decodeURI(p3).substring(1);
+                link_text = decodeURI(p3).replace(/^\\?\|/, '');
                 link_text = link_text === "" ? fileName : link_text;
             } else {
                 link_text = fileName;
