@@ -16,10 +16,9 @@ const log = require('hexo-log').default({
   silent: false
 });
 
-const cachedPost = {};
-let lastPost;
+let cachedPost = null;
 
-const REGEX_TITLEBASED_LINK = /(?<!\!)\[\[\s*([^*"\\\/<>:?\[\]|#]+)\s*(#[^"\\\/\[\]|]+)?\s*(\\?\|[^"\/<>:?\[\]]*)?\s*\]\]/g;
+const REGEX_TITLEBASED_LINK = /(?<!!)\[\[\s*([^*"\\\/<>:?\[\]|#]+)\s*(#[^"\\\/\[\]|]+)?\s*(\\?\|[^"\/<>:?\[\]]*)?\s*\]\]/g;
 const REGEX_CODEBLOCK = /^( {0,3})(`{3,})([^\n]*)\n([\s\S]*?)\n\1\2`*/gm;
 const REGEX_INLINE_CODE = /`[^`\n]+`/g;
 const REGEX_MATH_BLOCK = /\$\$[\s\S]*?\$\$/g;
@@ -27,23 +26,14 @@ const REGEX_MATH_INLINE = /\$(?!\s)((?:\\.|[^$\\])+?)(?<!\s)\$/g;
 
 
 if (config.enable) {
-
-  hexo.extend.filter.register('post_permalink', function (data) {
-    lastPost = data;
-    return data;
-  }, 1);
-
-  hexo.extend.filter.register('post_permalink', function (permalink) {
-    if (lastPost) {
-      const fileName = lastPost.source.match(/[^/]*$/)[0].replace(/\.md$/, '');
-      permalink = permalink.startsWith("/") ? permalink.substring(1) : permalink;
-      cachedPost[fileName] = permalink;
-      // log.debug("filename:"+fileName + " permalink: ",permalink)
-    }
-    return permalink;
-  }, 25);
+  // 显式注册生成前钩子
+  hexo.extend.filter.register('before_generate', () => {
+    initCache(hexo);
+  });
 
   hexo.extend.filter.register("before_post_render", (post) => {
+    if (!cachedPost) initCache(hexo);
+
     let tempContent = post.content;
     if (!tempContent) return post;
 
@@ -80,28 +70,50 @@ if (config.enable) {
   }, 9);
 }
 
+/**
+ * 核心索引构建函数
+ */
+function initCache(ctx) {
+  cachedPost = {};
+  // 使用 model 访问数据库比 locals 更直接稳定
+  const posts = ctx.model('Post').toArray();
+  const pages = ctx.model('Page').toArray();
+
+  [...posts, ...pages].forEach(item => {
+    if (!item.source) return;
+    // 提取文件名逻辑
+    const fileName = item.source.match(/[^/]*$/)[0].replace(/\.md$/, '');
+
+    // 这里的 path 处理很关键：确保它是不带 / 开头的纯路径
+    let link = item.path || '';
+    // 很多时候我们不希望链接里带 index.html
+    link = link.replace(/index\.html$/, '').replace(/\.html$/, '');
+    if (link.startsWith('/')) link = link.substring(1);
+    if (link.endsWith('/')) link = link.substring(0, link.length - 1);
+
+    cachedPost[fileName.toLowerCase()] = link;
+  });
+
+  log.info(`[Hexo-Link] Index built: ${Object.keys(cachedPost).length} items.`);
+}
+
 function replaceBiLink(match, p1, p2, p3) {
-  const fileName = decodeURI(p1).trim();
-  let anchor;
-  if (p2) {
-    let title = decodeURI(p2); // 不能含有 % 符号，会报错
-    title = title.toLowerCase();
-    title = title.replace(/[ ~!@#$^&*()_+.=\-`]+/g, '-');
-    title = title.replace(/^-+|-+$/g, '');
-    anchor = "#" + title;
-  } else {
-    anchor = "";
-  }
-  let link_text;
-  if (p3) {
-    link_text = decodeURI(p3).replace(/^\\?\|/, '');
-    link_text = link_text === "" ? fileName : link_text;
-  } else {
-    link_text = fileName;
-  }
-  if (cachedPost[fileName]) {
-    log.debug("hexo-filter-titlebased-link: Replace -", fileName);
-    return `${config.custom_html.before_tag}<a ${config.custom_html.link_attributes} href='/${cachedPost[fileName]}${anchor}'>${config.custom_html.before_text}${link_text}${config.custom_html.after_text}</a>${config.custom_html.after_tag}`;
+  const rawFileName = decodeURI(p1).trim();
+  const fileNameKey = rawFileName.toLowerCase();
+
+  if (cachedPost && cachedPost[fileNameKey]) {
+    let anchor = "";
+    if (p2) {
+      let title = decodeURI(p2).toLowerCase(); // 不能含有 % 符号，会报错
+      title = title.replace(/[ ~!@#$^&*()_+.=\-`]+/g, '-').replace(/^-+|-+$/g, '');
+      anchor = "#" + title;
+    }
+    let link_text = rawFileName;
+    if (p3) {
+      link_text = decodeURI(p3).replace(/^\\?\|/, '') || rawFileName;
+    }
+    log.debug("hexo-filter-titlebased-link: Replace -", rawFileName);
+    return `${config.custom_html.before_tag}<a ${config.custom_html.link_attributes} href='/${cachedPost[fileNameKey]}${anchor}'>${config.custom_html.before_text}${link_text}${config.custom_html.after_text}</a>${config.custom_html.after_tag}`;
   }
   return match;
 }
