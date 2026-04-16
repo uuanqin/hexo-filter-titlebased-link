@@ -1,6 +1,6 @@
 {
   "name": "hexo-filter-titlebased-link",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Transfer wiki links (based on the title) in Markdown files to permalink.",
   "main": "index.js",
   "scripts": {
@@ -22,5 +22,12 @@
   "bugs": {
     "url": "https://github.com/uuanqin/hexo-filter-titlebased-link/issues"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "hexo-log": "^4.1.0"
+  },
+  "files": [
+    "index.js",
+    "LICENSE"
+  ]
 }
