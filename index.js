@@ -24,7 +24,6 @@ const REGEX_INLINE_CODE = /`[^`\n]+`/g;
 const REGEX_MATH_BLOCK = /\$\$[\s\S]*?\$\$/g;
 const REGEX_MATH_INLINE = /\$(?!\s)((?:\\.|[^$\\])+?)(?<!\s)\$/g;
 
-
 if (config.enable) {
   // 显式注册生成前钩子
   hexo.extend.filter.register('before_generate', () => {
@@ -39,32 +38,19 @@ if (config.enable) {
 
     tempContent = tempContent.replace(/\r\n/g, '\n');
 
-    // 代码块保护
-    const blockCodeProtect = protectionTool(
-      tempContent,
-      REGEX_CODEBLOCK
-    );
-    tempContent = blockCodeProtect.protectedContent;
+    const protectors = [];
 
-    // 公式块保护
-    const mathBlockProtect = protectionTool(tempContent, REGEX_MATH_BLOCK);
-    tempContent = mathBlockProtect.protectedContent;
-
-    // 行内代码保护
-    const inlineCodeProtect = protectionTool(
-      tempContent,
-      REGEX_INLINE_CODE
-    );
-    tempContent = inlineCodeProtect.protectedContent;
-
-    const mathInlineProtect = protectionTool(tempContent, REGEX_MATH_INLINE);
-    tempContent = mathInlineProtect.protectedContent;
+    [REGEX_CODEBLOCK, REGEX_MATH_BLOCK, REGEX_INLINE_CODE, REGEX_MATH_INLINE
+    ].forEach(reg => {
+      const p = protectionTool(tempContent, reg);
+      tempContent = p.protectedContent;
+      protectors.push(p);
+    });
 
     tempContent = tempContent.replace(REGEX_TITLEBASED_LINK, replaceBiLink);
-    tempContent = mathInlineProtect.restoreCt(tempContent);
-    tempContent = inlineCodeProtect.restoreCt(tempContent);
-    tempContent = mathBlockProtect.restoreCt(tempContent);
-    tempContent = blockCodeProtect.restoreCt(tempContent);
+    while (protectors.length > 0) {
+      tempContent = protectors.pop().restoreCt(tempContent);
+    }
     post.content = tempContent;
     return post;
   }, 9);
@@ -79,20 +65,22 @@ function initCache(ctx) {
   const posts = ctx.model('Post').toArray();
   const pages = ctx.model('Page').toArray();
 
-  [...posts, ...pages].forEach(item => {
-    if (!item.source) return;
+  const processItem = (item) => {
+    const source = item.source;
+    if (!source) return;
     // 提取文件名逻辑
     const fileName = item.source.match(/[^/]*$/)[0].replace(/\.md$/, '');
 
     // 这里的 path 处理很关键：确保它是不带 / 开头的纯路径
     let link = item.path || '';
-    // 很多时候我们不希望链接里带 index.html
-    link = link.replace(/index\.html$/, '').replace(/\.html$/, '');
+    link = link.replace(/index\.html$/, '');
     if (link.startsWith('/')) link = link.substring(1);
-    if (link.endsWith('/')) link = link.substring(0, link.length - 1);
 
     cachedPost[fileName.toLowerCase()] = link;
-  });
+  }
+
+  posts.forEach(processItem);
+  pages.forEach(processItem);
 
   log.info(`[Hexo-Link] Index built: ${Object.keys(cachedPost).length} items.`);
 }
@@ -112,6 +100,7 @@ function replaceBiLink(match, p1, p2, p3) {
     if (p3) {
       link_text = decodeURI(p3).replace(/^\\?\|/, '') || rawFileName;
     }
+
     log.debug("hexo-filter-titlebased-link: Replace -", rawFileName);
     return `${config.custom_html.before_tag}<a ${config.custom_html.link_attributes} href='/${cachedPost[fileNameKey]}${anchor}'>${config.custom_html.before_text}${link_text}${config.custom_html.after_text}</a>${config.custom_html.after_tag}`;
   }
@@ -127,7 +116,7 @@ function replaceBiLink(match, p1, p2, p3) {
 function protectionTool(content, regex, skipCondition) {
   const cache = [];
   const seed = Math.random().toString(36).slice(2, 8);
-  const protect_symbol = `_pr0TEC7_${seed}_hxF3Tb5l_`;
+  const protect_symbol = `_p_7_${seed}_H_l_`;
 
   const protectedContent = content.replace(regex, (...args) => {
     // 根据传入的条件判断是否需要跳过保护
@@ -142,9 +131,10 @@ function protectionTool(content, regex, skipCondition) {
 
   // 返回处理后的文本和还原函数
   const restoreCt = (text) => {
+    if (cache.length === 0) return text;
     // 匹配所有形如 __PROTECT_seed_数字__ 的占位符
     const restoreRegex = new RegExp(`${protect_symbol}(\\d+)`, 'g');
-    return text.replace(restoreRegex, (m, index) => cache[index]);
+    return text.replace(restoreRegex, (_, index) => cache[index]);
   };
 
   return {protectedContent, restoreCt};
