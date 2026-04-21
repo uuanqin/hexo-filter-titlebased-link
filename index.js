@@ -20,7 +20,7 @@ const defaultConfig = {
   backlinks: {
     enable: false,
     inject_to_post: true,
-    generate_json: "bilinks.json",
+    generate_json: "",
     export_local: ""
   }
 };
