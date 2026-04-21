@@ -8,7 +8,10 @@ const config = hexo.config.titlebased_link = Object.assign({
     after_tag: "",
     before_text: "",
     after_text: ""
-  }
+  },
+  backlinks: {
+    enable: false
+  },
 }, hexo.config.titlebased_link);
 
 const log = require('hexo-log').default({
@@ -25,7 +28,6 @@ const REGEX_MATH_BLOCK = /\$\$[\s\S]*?\$\$/g;
 const REGEX_MATH_INLINE = /\$(?!\s)((?:\\.|[^$\\])+?)(?<!\s)\$/g;
 
 if (config.enable) {
-  // 显式注册生成前钩子
   hexo.extend.filter.register('before_generate', () => {
     initCache(hexo);
   });
@@ -33,21 +35,26 @@ if (config.enable) {
   hexo.extend.filter.register("before_post_render", (post) => {
     if (!cachedPost) initCache(hexo);
 
+    // 将当前文章的引用信息注入到 post 对象中，方便模板直接使用 page.bi_links
+    const fileNameKey = getFileName(post).toLowerCase();
+    if (cachedPost[fileNameKey]) {
+      post.bi_links = cachedPost[fileNameKey].bi_links;
+    }
+
     let tempContent = post.content;
     if (!tempContent) return post;
 
     tempContent = tempContent.replace(/\r\n/g, '\n');
 
     const protectors = [];
-
-    [REGEX_CODEBLOCK, REGEX_MATH_BLOCK, REGEX_INLINE_CODE, REGEX_MATH_INLINE
-    ].forEach(reg => {
+    [REGEX_CODEBLOCK, REGEX_MATH_BLOCK, REGEX_INLINE_CODE, REGEX_MATH_INLINE].forEach(reg => {
       const p = protectionTool(tempContent, reg);
       tempContent = p.protectedContent;
       protectors.push(p);
     });
 
     tempContent = tempContent.replace(REGEX_TITLEBASED_LINK, replaceBiLink);
+
     while (protectors.length > 0) {
       tempContent = protectors.pop().restoreCt(tempContent);
     }
@@ -57,32 +64,86 @@ if (config.enable) {
 }
 
 /**
+ * 获取文章文件名的统一函数
+ */
+function getFileName(item) {
+  if (!item.source) return "";
+  const match = item.source.match(/[^/]*$/);
+  return match ? match[0].replace(/\.md$/, '') : "";
+}
+
+/**
  * 核心索引构建函数
  */
 function initCache(ctx) {
   cachedPost = {};
-  // 使用 model 访问数据库比 locals 更直接稳定
   const posts = ctx.model('Post').toArray();
   const pages = ctx.model('Page').toArray();
+  const allItems = [...posts, ...pages];
 
-  const processItem = (item) => {
-    const source = item.source;
-    if (!source) return;
-    // 提取文件名逻辑
-    const fileName = item.source.match(/[^/]*$/)[0].replace(/\.md$/, '');
+  // 第一遍扫描：建立基础路径索引
+  allItems.forEach(item => {
+    const fileName = getFileName(item);
+    if (!fileName) return;
 
-    // 这里的 path 处理很关键：确保它是不带 / 开头的纯路径
     let link = item.path || '';
     link = link.replace(/index\.html$/, '');
     if (link.startsWith('/')) link = link.substring(1);
 
-    cachedPost[fileName.toLowerCase()] = link;
+    cachedPost[fileName.toLowerCase()] = {
+      path: link,
+      title: item.title || fileName,
+      // bi_links 用于存储关系
+      bi_links: {
+        inbounds: [],  // 入链：谁引用了我
+        outbounds: []  // 出链：我引用了谁
+      }
+    };
+  });
+
+  // 第二遍扫描：分析引用关系 (如果开启了 backlinks)
+  if (config.backlinks.enable) {
+    allItems.forEach(item => {
+      const sourceFileName = getFileName(item);
+      const sourceKey = sourceFileName.toLowerCase();
+      if (!cachedPost[sourceKey]) return;
+
+      let content = item._content || item.content || "";
+      // 简单剔除代码块，防止误判代码里的 [[link]]
+      content = content
+        .replace(REGEX_CODEBLOCK, '')
+        .replace(REGEX_MATH_BLOCK, '')
+        .replace(REGEX_INLINE_CODE, '')
+        .replace(REGEX_MATH_INLINE, '');
+
+      let match;
+      const seenInThisPost = new Set(); // 防止单篇文章内重复引用导致重复计数
+
+      while ((match = REGEX_TITLEBASED_LINK.exec(content)) !== null) {
+        const targetFileName = decodeURI(match[1]).trim();
+        const targetKey = targetFileName.toLowerCase();
+
+        // 如果目标文章存在，且不是自引用，且本次扫描没记录过
+        if (cachedPost[targetKey] && targetKey !== sourceKey && !seenInThisPost.has(targetKey)) {
+          seenInThisPost.add(targetKey);
+
+          // 记录出链 (Outbound)
+          cachedPost[sourceKey].bi_links.outbounds.push({
+            title: cachedPost[targetKey].title,
+            path: cachedPost[targetKey].path
+          });
+
+          // 记录入链 (Inbound)
+          cachedPost[targetKey].bi_links.inbounds.push({
+            title: cachedPost[sourceKey].title,
+            path: cachedPost[sourceKey].path
+          });
+        }
+      }
+    });
   }
 
-  posts.forEach(processItem);
-  pages.forEach(processItem);
-
-  log.info(`[Hexo-Link] Index built: ${Object.keys(cachedPost).length} items.`);
+  log.debug(`[Hexo-Link] Index built: ${Object.keys(cachedPost).length} items. Relations indexed.`);
 }
 
 function replaceBiLink(match, p1, p2, p3) {
