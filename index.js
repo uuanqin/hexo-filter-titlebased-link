@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const {slugize, deepMerge} = require('hexo-util');
 
-const {getFileName, getDeepValue, serializeAttr, protectionTool} = require('./lib/utils');
+const {getFileName, getDeepValue, protectionTool} = require('./lib/utils');
 
 // 1. 配置初始化
 const defaultConfig = {
@@ -132,9 +132,23 @@ function initCache(ctx) {
 
     const dataAttrs = {};
     Object.keys(config.attribute_mapping).forEach(fmKey => {
-      const val = getDeepValue(item, fmKey);
-      if (val !== undefined) {
-        dataAttrs[`data-${config.attribute_mapping[fmKey]}`] = serializeAttr(val);
+      let val = getDeepValue(item, fmKey);
+
+      // 1. 处理 Hexo 复杂的 Collection 对象
+      if (val && typeof val === 'object' && val.toArray) {
+        val = val.toArray().map(v => v.name || v.title || String(v));
+      }
+
+      if (val !== undefined && val !== null) {
+        let finalVal;
+        if (Array.isArray(val)) {
+          finalVal = val.join(' / ');
+        } else {
+          finalVal = String(val);
+        }
+
+        // 3. 仅转义可能破坏 HTML 结构的引号，不再有 JSON 的干扰
+        dataAttrs[`data-${config.attribute_mapping[fmKey]}`] = finalVal.replace(/"/g, '&quot;');
       }
     });
 
