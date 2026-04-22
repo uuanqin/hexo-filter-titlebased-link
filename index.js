@@ -25,6 +25,8 @@ const defaultConfig = {
   }
 };
 
+const include_ext = ['.md', '.markdown'];
+
 // 使用 deepMerge 确保嵌套配置不会被覆盖丢失
 const config = hexo.config.titlebased_link = deepMerge(defaultConfig, hexo.config.titlebased_link || {});
 
@@ -113,6 +115,13 @@ function initCache(ctx) {
 
   // 第一遍：构建基础信息与属性映射
   allItems.forEach(item => {
+    // 根据文件后缀过滤，排除 js/css/等非内容文件
+    const source = item.source || '';
+    const ext = path.extname(source).toLowerCase();
+    if (include_ext && include_ext.length > 0) {
+      if (!include_ext.includes(ext)) return;
+    }
+
     const fileName = getFileName(item);
     if (!fileName) return;
 
@@ -185,7 +194,6 @@ function replaceBiLink(match, p1, p2, p3) {
     let anchor = "";
     if (p2) {
       // decodeURI(p2) 拿到的是 "#标题" 这种带井号的内容
-      // 我们去掉头部的 "#"，然后交给 slugize 处理
       const rawAnchor = decodeURI(p2).substring(1).trim();
 
       // slugize 默认就会处理：转小写、去空格、处理特殊字符
@@ -206,5 +214,3 @@ function replaceBiLink(match, p1, p2, p3) {
   }
   return match;
 }
-
-
