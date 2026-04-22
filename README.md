@@ -104,18 +104,19 @@ Example of backlinks' structure:
 # Assuming we are currently viewing "My Awesome Post"
 
 inbounds:
-  # Pages that link TO the current post (Backlinks/Mentions)
-  - title: "Project Overview 2026"
+  # Pages that link TO this post (Backlinks/Mentions)
+  - id: "project-2026-overview" 
+    title: "Project Overview 2026"
     path: "p/2026/04/01/overview/"
-  - title: "Digital Garden Index"
+  - id: "index-garden"
+    title: "Digital Garden Index"
     path: "p/2026/01/15/index/"
 
 outbounds:
-  # Pages that the current post links TO (References)
-  - title: "Hexo Plugin Guide"
+  # Pages that this post links TO (References)
+  - id: "hexo-plugin-guide"
+    title: "Hexo Plugin Guide"
     path: "p/2024/04/12/plugin-dev/"
-  - title: "Markdown Syntax"
-    path: "p/2025/11/20/syntax-basics/"
 ```
 
 ### Index Data Export (JSON)

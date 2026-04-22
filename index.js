@@ -106,16 +106,15 @@ if (config.enable) {
   }
 }
 
-
 function initCache(ctx) {
   cachedPost = {};
-  const posts = ctx.model('Post').toArray();
+  // 建议：只处理已发布的内容，避免草稿干扰
+  const posts = ctx.model('Post').toArray().filter(p => p.published !== false);
   const pages = ctx.model('Page').toArray();
   const allItems = [...posts, ...pages];
 
   // 第一遍：构建基础信息与属性映射
   allItems.forEach(item => {
-    // 根据文件后缀过滤，排除 js/css/等非内容文件
     const source = item.source || '';
     const ext = path.extname(source).toLowerCase();
     if (include_ext && include_ext.length > 0) {
@@ -124,6 +123,8 @@ function initCache(ctx) {
 
     const fileName = getFileName(item);
     if (!fileName) return;
+
+    const fileNameKey = fileName.toLowerCase();
 
     let link = item.path || '';
     link = link.replace(/index\.html$/, '');
@@ -137,7 +138,8 @@ function initCache(ctx) {
       }
     });
 
-    cachedPost[fileName.toLowerCase()] = {
+    cachedPost[fileNameKey] = {
+      id: fileNameKey, // 显式存储 ID，前端绘图直接用
       path: link,
       title: item.title || fileName,
       attrs: dataAttrs,
@@ -152,7 +154,6 @@ function initCache(ctx) {
       if (!cachedPost[sourceKey]) return;
 
       let content = item._content || item.content || "";
-      // 简单剔除代码块，防止误判代码里的 [[link]]
       content = content
         .replace(REGEX_CODEBLOCK, '')
         .replace(REGEX_MATH_BLOCK, '')
@@ -164,16 +165,21 @@ function initCache(ctx) {
 
       while ((match = REGEX_TITLEBASED_LINK.exec(content)) !== null) {
         const targetKey = decodeURI(match[1]).trim().toLowerCase();
+
+        // 关键改动：记录 targetKey 作为 ID
         if (cachedPost[targetKey] && targetKey !== sourceKey && !seen.has(targetKey)) {
           seen.add(targetKey);
+
           // 记录出链 (Outbound)
           cachedPost[sourceKey].bi_links.outbounds.push({
+            id: targetKey,
             title: cachedPost[targetKey].title,
             path: cachedPost[targetKey].path
           });
 
           // 记录入链 (Inbound)
           cachedPost[targetKey].bi_links.inbounds.push({
+            id: sourceKey,
             title: cachedPost[sourceKey].title,
             path: cachedPost[sourceKey].path
           });
@@ -182,7 +188,7 @@ function initCache(ctx) {
     });
   }
 
-  log.debug(`[Hexo-Link] Index built: ${Object.keys(cachedPost).length} items. Relations indexed.`);
+  log.debug(`[Hexo-Link] Index built: ${Object.keys(cachedPost).length} items.`);
 }
 
 function replaceBiLink(match, p1, p2, p3) {
