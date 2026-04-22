@@ -98,9 +98,22 @@ titlebased_link:
 Example of backlinks' structure:
 
 ```yaml
-# page.bi_links.inbounds structure
-- title: "Origin Post"
-  path: "p/2024/origin/"
+# Example: Data structure available within page.bi_links
+# Assuming we are currently viewing "My Awesome Post"
+
+inbounds:
+  # Pages that link TO the current post (Backlinks/Mentions)
+  - title: "Project Overview 2026"
+    path: "p/2026/04/01/overview/"
+  - title: "Digital Garden Index"
+    path: "p/2026/01/15/index/"
+
+outbounds:
+  # Pages that the current post links TO (References)
+  - title: "Hexo Plugin Guide"
+    path: "p/2024/04/12/plugin-dev/"
+  - title: "Markdown Syntax"
+    path: "p/2025/11/20/syntax-basics/"
 ```
 
 ### Index Data Export (JSON)
