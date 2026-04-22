@@ -22,6 +22,8 @@ npm install hexo-filter-titlebased-link --save
 ## Full Configuration
 
 ```yaml
+# hexo-filter-titlebased-link
+# https://github.com/uuanqin/hexo-filter-titlebased-link
 titlebased_link:
   enable: true
   attribute_mapping: {} # e.g., { "category": "cat" }
