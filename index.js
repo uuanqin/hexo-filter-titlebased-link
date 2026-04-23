@@ -6,7 +6,6 @@ const {slugize, deepMerge} = require('hexo-util');
 
 const {getFileName, getDeepValue, protectionTool} = require('./lib/utils');
 
-// 1. 配置初始化
 const defaultConfig = {
   enable: false,
   attribute_mapping: {},
@@ -108,8 +107,8 @@ if (config.enable) {
 
 function initCache(ctx) {
   cachedPost = {};
-  // 建议：只处理已发布的内容，避免草稿干扰
-  const posts = ctx.model('Post').toArray().filter(p => p.published !== false);
+
+  const posts = ctx.model('Post').toArray();
   const pages = ctx.model('Page').toArray();
   const allItems = [...posts, ...pages];
 
@@ -134,9 +133,12 @@ function initCache(ctx) {
     Object.keys(config.attribute_mapping).forEach(fmKey => {
       let val = getDeepValue(item, fmKey);
 
-      // 1. 处理 Hexo 复杂的 Collection 对象
-      if (val && typeof val === 'object' && val.toArray) {
-        val = val.toArray().map(v => v.name || v.title || String(v));
+      if (val && typeof val === 'object') {
+        if (typeof val.toArray === 'function') {
+          val = val.toArray().map(v => v.name || v.title || String(v));
+        } else {
+          val = (val instanceof Date) ? val.toISOString() : (val.title || val.name || String(val));
+        }
       }
 
       if (val !== undefined && val !== null) {
@@ -147,14 +149,16 @@ function initCache(ctx) {
           finalVal = String(val);
         }
 
-        // 3. 仅转义可能破坏 HTML 结构的引号，不再有 JSON 的干扰
         dataAttrs[`data-${config.attribute_mapping[fmKey]}`] = finalVal.replace(/"/g, '&quot;');
       }
     });
 
+    const isDraft = (item.published === false);
+    const finalPath = isDraft ? 'draft_post/' : link;
     cachedPost[fileNameKey] = {
       id: fileNameKey, // 显式存储 ID，前端绘图直接用
-      path: link,
+      path: finalPath,
+      isDraft: isDraft,
       title: item.title || fileName,
       attrs: dataAttrs,
       bi_links: {inbounds: [], outbounds: []}
@@ -165,7 +169,8 @@ function initCache(ctx) {
   if (config.backlinks.enable) {
     allItems.forEach(item => {
       const sourceKey = getFileName(item).toLowerCase();
-      if (!cachedPost[sourceKey]) return;
+      const sourceEntry = cachedPost[sourceKey];
+      if (!sourceEntry || sourceEntry.isDraft) return;
 
       let content = item._content || item.content || "";
       content = content
@@ -179,23 +184,24 @@ function initCache(ctx) {
 
       while ((match = REGEX_TITLEBASED_LINK.exec(content)) !== null) {
         const targetKey = decodeURI(match[1]).trim().toLowerCase();
+        const targetEntry = cachedPost[targetKey];
 
-        // 关键改动：记录 targetKey 作为 ID
-        if (cachedPost[targetKey] && targetKey !== sourceKey && !seen.has(targetKey)) {
+        // 记录 targetKey 作为 ID
+        if (targetEntry && !targetEntry.isDraft && targetKey !== sourceKey && !seen.has(targetKey)) {
           seen.add(targetKey);
 
           // 记录出链 (Outbound)
-          cachedPost[sourceKey].bi_links.outbounds.push({
+          sourceEntry.bi_links.outbounds.push({
             id: targetKey,
-            title: cachedPost[targetKey].title,
-            path: cachedPost[targetKey].path
+            title: targetEntry.title,
+            path: targetEntry.path
           });
 
           // 记录入链 (Inbound)
-          cachedPost[targetKey].bi_links.inbounds.push({
+          targetEntry.bi_links.inbounds.push({
             id: sourceKey,
-            title: cachedPost[sourceKey].title,
-            path: cachedPost[sourceKey].path
+            title: sourceEntry.title,
+            path: sourceEntry.path
           });
         }
       }
@@ -229,8 +235,8 @@ function replaceBiLink(match, p1, p2, p3) {
 
     // 处理动态 Data 属性
     const attrStr = Object.entries(entry.attrs).map(([k, v]) => `${k}="${v}"`).join(' ');
-
-    return `${config.custom_html.before_tag}<a ${config.custom_html.link_attributes} ${attrStr} href='/${entry.path}${anchor}'>${config.custom_html.before_text}${link_text}${config.custom_html.after_text}</a>${config.custom_html.after_tag}`;
+    const finalHref = entry.path.startsWith('/') ? entry.path : '/' + entry.path;
+    return `${config.custom_html.before_tag}<a ${config.custom_html.link_attributes} ${attrStr} href='${finalHref}${anchor}'>${config.custom_html.before_text}${link_text}${config.custom_html.after_text}</a>${config.custom_html.after_tag}`;
   }
   return match;
 }
