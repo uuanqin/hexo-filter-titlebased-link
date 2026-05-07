@@ -34,7 +34,7 @@ const log = require('hexo-log').default({debug: false, silent: false});
 let cachedPost = null;
 
 // 正则定义
-const REGEX_TITLEBASED_LINK = /(?<!!)\[\[\s*([^*"\\\/<>:?\[\]|#]+)\s*(#[^"\\\/\[\]|]+)?\s*(\\?\|[^"\/<>:?\[\]]*)?\s*\]\]/g;
+const REGEX_TITLEBASED_LINK = /(?<!!)\[\[\s*([^*"\\\/<>:?\[\]|#]+)\s*(#[^"\\\/\[\]|]+)?\s*(\\?\|[^\/\[\]]*)?\s*\]\]/g;
 const REGEX_CODEBLOCK = /^( {0,3})(`{3,})([^\n]*)\n([\s\S]*?)\n\1\2`*/gm;
 const REGEX_INLINE_CODE = /`[^`\n]+`/g;
 const REGEX_MATH_BLOCK = /\$\$[\s\S]*?\$\$/g;
